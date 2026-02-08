@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Song Version Comparison – Audio & Emotion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050712;
+      color: #f5f7ff;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #090d1c;
+      border-radius: 16px;
+      padding: 20px 24px 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .card p {
+      margin: 4px 0 16px;
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    pre {
+      background: #050712;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      overflow: auto;
+      max-height: 280px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* ===== Timeline ===== */
+    #structureTimeline {
+      margin-top: 12px;
+    }
+    .timeline-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .timeline-label {
+      width: 150px;
+      font-size: 0.9rem;
+      color: #ddd;
+    }
+    .timeline-bar {
+      flex: 1;
+      display: flex;
+      height: 18px;
+      border-radius: 9px;
+      overflow: hidden;
+      background: #111827;
+    }
+    .segment-block {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      color: #111;
+      opacity: 0.9;
+      cursor: pointer;
+    }
+
+    /* ===== Segment controls ===== */
+    .segment-controls {
+      margin-bottom: 12px;
+    }
+    .segment-controls button {
+      margin-right: 8px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #2b3a4f;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+    .segment-controls button.active {
+      background: #f6c453;
+      color: #111;
+      font-weight: 600;
+    }
+
+    /* ===== Chart wrapper ===== */
+    .chart-wrapper {
+      position: relative;
+      max-width: 720px;
+      width: 100%;
+      height: 320px;
+      margin-top: 8px;
+    }
+
+    #globalRadar {
+      width: 100%;
+      height: 100%;
+      background: #050712;
+      border-radius: 12px;
+    }
+
+    /* ===== p5.js container ===== */
+    #p5-container {
+      width: 100%;
+      height: 550px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #050712;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      margin-top: 8px;
+    }
+
+    @media (max-width: 768px) {
+      #p5-container {
+        height: 420px;
+      }
+    }
+
+    /* ===== Segmentation / Upload UI ===== */
+    .segmentation-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .seg-btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .seg-btn.primary {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+    }
+
+    .custom-seg-panel {
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #020617;
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+      font-size: 13px;
+    }
+
+    .custom-seg-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .custom-seg-grid select,
+    .custom-seg-grid input {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+    }
+
+    .seg-list {
+      margin-top: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .seg-list h4 {
+      margin: 6px 0 2px;
+      font-size: 12px;
+      color: #cbd5f5;
+    }
+
+    .seg-list ul {
+      margin: 0 0 4px 14px;
+      padding: 0;
+    }
+
+    .seg-list li {
+      list-style: disc;
+    }
+
+    #debug {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+
+    #upload-status {
+      font-size: 12px;
+      margin-top: 6px;
+      opacity: 0.85;
+    }
+
+    /* ===== AI panel ===== */
+    .ai-panel {
+      background: linear-gradient(to right, #111827, #020617);
+      border-radius: 12px;
+      padding: 14px 16px;
+      border: 1px solid rgba(129, 140, 248, 0.6);
+      margin-top: 6px;
+    }
+
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .ai-title {
+      font-size: 15px;
+      color: #a5b4fc;
+      font-weight: 600;
+    }
+
+    .ai-sub {
+      font-size: 11px;
+      color: #818cf8;
+      opacity: 0.9;
+    }
+
+    .ai-btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: none;
+      background: #4f46e5;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .ai-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #ai-status {
+      font-size: 11px;
+      color: #c7d2fe;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+
+    #ai-results {
+      font-size: 12px;
+      color: #e0e7ff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <header>
+      <h1>Song Version Comparison – Audio & Emotion</h1>
+      <div class="subtitle">
+        Module A: analytical charts · Module B: emotional visualization · AI commentary (GPT)
+      </div>
+    </header>
+
+    <!-- ==================== Upload your own audio ==================== -->
+    <section class="card">
+      <h2>Upload your own audio versions</h2>
+      <p>
+        You can upload up to three versions. Each slot has an internal id
+        (<code>original / piano / duet</code>), but you can rename the
+        <b>version names</b> freely (e.g. "studio", "live", "acoustic").
+        All charts will use your custom names.
+      </p>
+
+      <div class="custom-seg-grid">
+        <div>
+          <div style="font-size:12px; opacity:0.8;">Version 1 name (slot: original)</div>
+          <input type="text" id="name-original" value="original" style="margin-top:2px; width:160px;" />
+          <div style="margin-top:4px;">
+            <input type="file" id="file-original" accept="audio/wav,audio/x-wav,audio/*" />
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:12px; opacity:0.8;">Version 2 name (slot: piano)</div>
+          <input type="text" id="name-piano" value="piano" style="margin-top:2px; width:160px;" />
+          <div style="margin-top:4px;">
+            <input type="file" id="file-piano" accept="audio/wav,audio/x-wav,audio/*" />
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:12px; opacity:0.8;">Version 3 name (slot: duet)</div>
+          <input type="text" id="name-duet" value="duet" style="margin-top:2px; width:160px;" />
+          <div style="margin-top:4px;">
+            <input type="file" id="file-duet" accept="audio/wav,audio/x-wav,audio/*" />
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-upload-analyse" class="seg-btn primary" style="margin-top:8px;">
+        Analyse uploaded audio
+      </button>
+
+      <div id="upload-status"></div>
+    </section>
+
+    <!-- ==================== Segmentation settings ==================== -->
+    <section class="card">
+      <h2>Segmentation settings</h2>
+      <p>
+        Choose <b>automatic structure-based</b> segmentation, or define your own structure
+        (intro / verse / chorus / bridge ...) by entering start/end times in seconds.
+      </p>
+
+      <div class="segmentation-row">
+        <button id="btn-auto-seg" class="seg-btn primary">
+          Use automatic (structure-based) segmentation
+        </button>
+        <button id="btn-custom-seg" class="seg-btn">
+          Use custom segmentation
+        </button>
+      </div>
+
+      <div id="custom-seg-panel" class="custom-seg-panel" style="display:none;">
+        <div class="custom-seg-grid">
+          <label for="seg-version-select">Version slot:</label>
+          <select id="seg-version-select">
+            <option value="original">original</option>
+            <option value="piano">piano</option>
+            <option value="duet">duet</option>
+          </select>
+
+          <label for="seg-name-select">Segment name:</label>
+          <select id="seg-name-select">
+            <option value="intro">intro</option>
+            <option value="verse1">verse1</option>
+            <option value="verse2">verse2</option>
+            <option value="prechorus">prechorus</option>
+            <option value="chorus1">chorus1</option>
+            <option value="chorus2">chorus2</option>
+            <option value="bridge">bridge</option>
+            <option value="solo">solo</option>
+            <option value="outro">outro</option>
+          </select>
+
+          <label for="seg-start-input">start (s):</label>
+          <input type="number" id="seg-start-input" min="0" step="0.1" placeholder="e.g. 16.0" />
+
+          <label for="seg-end-input">end (s):</label>
+          <input type="number" id="seg-end-input" min="0" step="0.1" placeholder="e.g. 46.0" />
+
+          <button id="btn-add-seg" class="seg-btn">+ Add segment</button>
+        </div>
+
+        <div class="segmentation-row" style="margin-top: 4px;">
+          <button id="btn-apply-custom" class="seg-btn primary">
+            Apply custom segmentation to analysis
+          </button>
+          <button id="btn-clear-custom" class="seg-btn">
+            Clear custom segments
+          </button>
+        </div>
+
+        <div id="seg-list" class="seg-list">
+          <!-- 显示已添加的分段 -->
+        </div>
+      </div>
+
+      <div id="debug"></div>
+    </section>
+
+    <!-- ==================== Module A – Raw JSON ==================== -->
+    <section class="card">
+      <h2>
+        Module A – Raw data from
+        <code>/api/demo</code>,
+        <code>/api/custom_segments</code> or
+        <code>/api/upload_analyse</code>
+      </h2>
+      <p>The backend returns JSON describing each version's segments and features.</p>
+
+      <pre id="json-data">Waiting for analysis data ...</pre>
+    </section>
+
+    <!-- ==================== Module A – Structure Timeline ==================== -->
+    <section class="card">
+      <h2>Module A – Structure timeline</h2>
+      <p>Approximate structure of each version based on segment start/end times.</p>
+      <div id="structureTimeline"></div>
+
+      <div style="margin-top: 12px; font-size: 13px; opacity: 0.85;">
+        Click a coloured block to listen to that specific segment.
+        Current: <span id="current-play-label">—</span>
+      </div>
+      <audio id="audio-player" controls style="width: 100%; margin-top: 6px;">
+        Your browser does not support the audio element.
+      </audio>
+    </section>
+
+    <!-- ==================== Module A – Segment Comparison ==================== -->
+    <section class="card">
+      <h2>Module A – Segment comparison (Chart.js)</h2>
+      <p>Select a song segment and compare features across versions.</p>
+
+      <div id="segment-controls" class="segment-controls"></div>
+
+      <div class="chart-wrapper">
+        <canvas id="segmentChart"></canvas>
+      </div>
+    </section>
+
+    <!-- ==================== Module A – Global radar ==================== -->
+    <section class="card">
+      <h2>Module A – Global feature radar (Chart.js)</h2>
+      <p>
+        Each version is summarized over all segments, then compared on
+        <b>energy, valence, brightness, roughness</b>.
+        This gives a “high-level emotional profile” of each version.
+      </p>
+
+      <div class="chart-wrapper">
+        <canvas id="globalRadar"></canvas>
+      </div>
+    </section>
+
+    <!-- ==================== AI Emotional Commentary ==================== -->
+    <section class="card">
+      <h2>AI Emotional Commentary (GPT)</h2>
+      <p>
+        Ask the AI to interpret the overall emotion of each version
+        and repaint the visualization using an AI-chosen color.
+      </p>
+
+      <div class="ai-panel">
+        <div class="ai-header">
+          <div>
+            <div class="ai-title">GPT-based emotional description</div>
+            <div class="ai-sub">Powered by OpenAI · 1 comment per version</div>
+          </div>
+          <button id="btn-ai-analyse" class="ai-btn">
+            Ask AI to interpret
+          </button>
+        </div>
+
+        <div id="ai-status">Ready.</div>
+        <div id="ai-results"></div>
+      </div>
+    </section>
+
+    <!-- ==================== Module B – p5.js Emotion Visualization ==================== -->
+    <section class="card">
+      <h2>Module B – Emotion Visualization (p5.js)</h2>
+      <p>Visual emotional motion of each version. Colors are driven by valence/energy or AI color (if available).</p>
+
+      <div id="p5-container"></div>
+    </section>
+
+  </div>
+
+  <!-- ========== JS Libraries ========== -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+
+  <!-- ========== Your JS ========== -->
+  <script src="/static/main.js"></script>
+  <script src="/static/vis.js"></script>
+
+</body>
+</html>

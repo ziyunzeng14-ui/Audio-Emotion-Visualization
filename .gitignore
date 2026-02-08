@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# virtual env (do NOT upload)
+venv/
+
+# secrets
+.env
+
+# Audio (avoid huge files)
+audio/uploads/
+*.wav
+*.mp3
+*.aiff
+*.flac
+
+# Editor / OS
+.vscode/
+.DS_Store
